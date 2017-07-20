@@ -1,0 +1,96 @@
+---
+title: "Prediction Assignment Writeup"
+author: "Abdulrahman Ashaf"
+date: "July 1, 2017"
+output: html_document
+---
+### Load libraries
+```{r prep, echo = F, message = F}
+library(caret)
+```
+
+### load data
+* Load train and test datasets.           
+```{r data, eval = F}
+if(!file.exists("pml-training.csv")){
+        trainDataURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+        download.file(trainDataURL, destfile = "pml-training.csv")
+        }
+if(!file.exists("pml-testing.csv")){
+        testDataURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+        download.file(testDataURL, destfile = "pml-testing.csv")
+        }
+
+trainData <- read.csv("pml-training.csv")
+testData <- read.csv("pml-testing.csv")
+```
+### analysis the datasets
+```{r data, eval = F}
+names(trainData)
+summary(trainData)
+str(trainData)
+dim(trainData)
+colSums(is.na(trainData))/dim(trainData)[1]
+```
+
+### clean the dataset
+based on the analysis we observe alot of entries with na values so remove ones with na values more than 97%.
+```{r data, eval = F}
+naCols  <- colSums(is.na(trainData))
+trainData <- trainData[ ,naCols/dim(trainData)[1] < 0.97]
+```
+### data preprocessing
+
+we remove features with zerovariance as it will not affect our decision boundry and training process.
+
+```{r data, eval = F}
+zerovar <- nearZeroVar(trainData, saveMetrics = FALSE)
+zerovar
+trainData <- trainData[ , -zerovar]
+nearZeroVar(trainData, saveMetrics = FALSE)
+dim(trainData)
+```
+
+### cross validation
+we split the training dataset to 75% for training and 25% to validation and preformance measure.
+```{r data, eval = F}
+inTrain <- createDataPartition(trainData$classe, p = 0.70, list = FALSE)
+trainPart <- trainData[inTrain, ]
+validatePart <- trainData[-inTrain, ]
+```
+
+### cross validation
+we split the training dataset to 75% for training and 25% to validation and preformance measure. we als 3-fold cross-validation.
+```{r data, eval = F}
+inTrain <- createDataPartition(trainData$classe, p = 0.70, list = FALSE)
+trainPart <- trainData[inTrain, ]
+validatePart <- trainData[-inTrain, ]
+```
+
+### training and model selection
+#### Model Selection:
+The problem goal is is classification. We would use random forest as a model and we would measure it preformance although
+it might take long in training phase it would achieve high accurecy. we use 3-fold cross-validatio for our training.
+```{r data, eval = F}
+set.seed(111)
+trainCont <- trainControl(method="cv",number=3)
+forestModel = train(classe ~., data=trainPart, method="rf",trControl=trainCont)
+forestModel
+```
+### validation and preformance measure
+```{r data, eval = F}
+validationMeasure <- predict(forestModel, validatePart)
+table(validationMeasure, validatePart$classe)
+confusionMatrix(validatePart$classe, validationMeasure)
+
+modelURL <- "forestModel.RData"
+save(forestModel, file=modelURL )
+```
+We acieved accurecy of 1.0 on both training and validation datasets.
+### testing and predection
+now we use your prediction model to predict 20 different test cases.
+```{r data, eval = F}
+load(forestModel, file=modelURL)
+testMeasure <- predict(forestModel, newdata = testData)
+testMeasure
+```
