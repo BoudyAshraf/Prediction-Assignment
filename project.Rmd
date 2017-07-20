@@ -77,6 +77,7 @@ trainCont <- trainControl(method="cv",number=3)
 forestModel = train(classe ~., data=trainPart, method="rf",trControl=trainCont)
 forestModel
 ```
+our sample error of training is 0%.
 ### validation and preformance measure
 ```{r data, eval = F}
 validationMeasure <- predict(forestModel, validatePart)
@@ -86,7 +87,7 @@ confusionMatrix(validatePart$classe, validationMeasure)
 modelURL <- "forestModel.RData"
 save(forestModel, file=modelURL )
 ```
-We acieved accurecy of 1.0 on both training and validation datasets.
+We acieved accurecy of 1.0 on both training and validation datasets. with 0% sample error.
 ### testing and predection
 now we use your prediction model to predict 20 different test cases.
 ```{r data, eval = F}
